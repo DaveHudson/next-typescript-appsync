@@ -361,15 +361,11 @@ This is amazing but if you take a closer look at the intellisense in VSCode you'
 
 Let's clean that up.
 
-## DeepOmit tricks
+## Omit & Exclude
 
 Fortunately we can automate this clean up in a nice way that won't break as we amend our `graphql.schema` file.
 
 Create a new file `graphql/APITypes.ts` and add the export to your `graphql/index.ts` file.
-
-Now we need to add a few modules:
-
-`npm i ts-essentials` this contains `DeepNonNullable` which will remove the null entries from the type.
 
 Next create a new file `graphql/DeepOmit.ts` and paste in the following:
 
@@ -404,12 +400,9 @@ export type DeepOmit<T, K> = T extends Primitive
     };
 ```
 
-Sadly this is required as the DeepOmit in `ts-essentials` does not do what we need. There may be another module that can do this, need to investigate.
-
 Back in `APITypes.ts` do some imports:
 
 ```ts
-import { DeepNonNullable } from 'ts-essentials';
 import { DeepOmit } from './DeepOmit';
 import {
   ListTodosQuery,
@@ -420,7 +413,7 @@ Then well use those imports on our `GetTodoQuery` to filter out the `null` entri
 
 ```ts
 export type TodoType = DeepOmit<
-  DeepNonNullable<GetTodoQuery['getTodo']>,
+  Exclude<GetTodoQuery['getTodo'], null>,
   '__typename'
 >;
 ```

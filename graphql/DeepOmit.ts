@@ -1,6 +1,3 @@
-// TODO: ts-essentials does not support DeepOmit for __typename, using this instead util function instead
-// https://github.com/krzkaczor/ts-essentials/issues/104
-
 type Primitive =
   | string
   // eslint-disable-next-line @typescript-eslint/ban-types
