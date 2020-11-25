@@ -11,5 +11,3 @@ export type TodoType = DeepOmit<
   GetTodoQuery['getTodo'],
   '__typename'
 >;
-
-export type TodoMeType = DeepOmit<GetTodoQuery['getTodo'], '__typename'>
