@@ -44,7 +44,7 @@ export default function Home() {
           <code className={styles.code}>pages/index.js</code>
         </p>
 
-        <div className={styles.grid}>
+        <a href="#" className={styles.grid}>
           {todos?.listTodos?.items.map((todo: TodoType) => {
             return (
               <div className={styles.card} key={todo.id}>
@@ -54,7 +54,7 @@ export default function Home() {
               </div>              
             )
           })}
-        </div>
+        </a>
       </main>
 
       <footer className={styles.footer}>
