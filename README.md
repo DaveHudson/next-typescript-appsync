@@ -1,16 +1,6 @@
 # How to use AppSync GraphQL TypeScript types in React
 
-I recently had the task of performing a code review on a TypeScript project utilising NextJS and Amplify AppSync. The developer had opted for TypeScript because it would "prevent runtime errors for both backend and frontend". This is solid reasoning which I fully support, problem is this wasn't quote what was happening in reality.
-
-The AppSync GraphQL was strongly typed through the `schema.graphql` file but the TypeScript frontend wasn't linked to those types in any way. The React code simply used the TypeScript `:any` type meaning the code was effectively opting out of type checking. So how do you use the TypeScript types of an AppSync GraphQL API on the frontend of a React app?
-
-Well the Amplify CLI is pretty helpful and gets you most of the way there as it generates a types file when [codegen](https://docs.amplify.aws/cli/graphql-transformer/codegen#amplify-add-codegen) is run. 
-
-However, it turns out the generated types need some further manipulation as they contain `null` values and `__typename` properties. Additionally when actually making a GraphQL API call we get back a JSON response wrapped in a `data:` object which our type doesn't expect. This is because the types returned by the graphql function are a mashup of GraphQLResult and Observable since this same function is used for both.
-
-What follows is a walkthrough of the steps I took to achieve a typed frontend, taking the generated types from Amplify and manipulating them into a format that can be used effectively on the frontend. 
-
-If you want to bypass the walkthrough and jump straight to the code it's on [Github](https://github.com/DaveHudson/next-typescript-appsync). 
+The article to go with this code is on [Dev.to](https://dev.to/applification/how-to-use-amplify-appsync-graphql-types-in-a-react-typescript-app-of).
 
 ----
 
@@ -100,7 +90,7 @@ Enter the file name and path for the generated code I used `graphql/API.ts`
 
 ## GraphiQL
 
-We now have a GraphQL API, create some ToDo items for the frontend to play with by running `amplify mock`. Mocking will create the underlying DynamoDB tables and spin up GraphiQL on a local url. You should see something like:
+We now have a GraphQL API, create some Todo items for the frontend to play with by running `amplify mock`. Mocking will create the underlying DynamoDB tables and spin up GraphiQL on a local url. You should see something like:
 
 `AppSync Mock endpoint is running at http://192.168.86.161:20002`
 
@@ -114,7 +104,7 @@ mutation MyMutation {
 }
 ```
 
-Create a few more with your own todo name and description and then take see how the data looks in GraphiQL with the following query.
+Create a few more with your own todo name and description then use the following query to see your data:
 
 ```ts
 query MyQuery {
@@ -164,7 +154,7 @@ In my case that yields:
 }
 ```
 
-Note the structure of the returned JSON. There is a data object, which has a `listTodos` object, which contains an `items` array. Each array item has properties that are defined by our strongly typed schema in `schema.graphql`. You'll also notice some utility properties have been added automatically by Amplify, specifically `createdAt` and `updatedAt`
+Note the structure of the returned JSON. There is a data object, which has a `listTodos` object, which contains an `items` array. Each array item has properties that are defined by our strongly typed `schema.graphql` file. You'll also notice some utility properties have been added automatically by Amplify, specifically `createdAt` and `updatedAt`
 
 ## React
 
@@ -244,7 +234,7 @@ If all went well you should see the exact same JSON response we saw in GraphiQL 
   }, []);
 ```
 
-We've not got the list of todos in state, we just need to map over the array in JSX. Remove the four anchor tag sections and replace with the following code which will map over the todo array and display all our todos on the page.
+We've now got the list of todos in state, we just need to map over the array in JSX. Remove the four anchor tag sections and replace with the following code which will map over the todo array and display all our todos on the page.
 
 ```html
   <div className={styles.grid}>
@@ -259,7 +249,7 @@ We've not got the list of todos in state, we just need to map over the array in 
   </div>
 ```
 
-You should see the todo items you added in GraphiQL on the web page. This is super but it's all still JavaScript, we still need to add some TypeScript to make use of the GraphQL types. 
+You should see the todo items you added in GraphiQL on the web page. This is good but it's all still JavaScript, we still need to add some TypeScript to make use of the GraphQL types. 
 
 We can modify the GraphQLAPI code to use the generated `ListTodosQuery` type from `API.ts`. First import it:
 
@@ -274,7 +264,7 @@ Then tell GraphQL to use this type:
   })) as { data: ListTodosQuery }
 ```
 
-Note how we need to account for the fact the response returned is a data object. If you look in the `API.ts` file you'll see it the type doesn't contain a data object so we need to let TypeScript know.
+Note how we need to account for the fact the response returned is a data object. If you look in the `API.ts` file you'll see that the type doesn't contain a data object so we need to let TypeScript know that we expect it.
 
 ```ts
 export type ListTodosQuery = {
@@ -295,7 +285,7 @@ export type ListTodosQuery = {
 
 If you try typing a period `.` after response in the console.log you'll see we now have full intellisense! TypeScript is telling you it expects the response to have a `data` object. If you select that then type another period TypeScript tells you it expects a `listTodos` object.
 
-Fantastic, TypeScript now knows exactly what format our GraphQL API responses should be. However, down in the JSX code we've some more work to do. At the moment our API response is TypeScript aware but the JSX isn't, when mapping over the todos TypeScript can't infer what the types should be.
+TypeScript now knows exactly what format our GraphQL API responses should be. However, down in the JSX code we've some more work to do. At the moment our API response is TypeScript aware but the JSX isn't, when mapping over the todos TypeScript can't infer what the types should be.
 
 We can fix that by telling React.useState what types to expect:
 
@@ -309,11 +299,11 @@ Now if you go to the JSX and start typing you'll see all the same lovely intelli
 
 e.g. `{todo.name}`
 
-This is amazing but if you take a closer look at the intellisense in VSCode you'll see a lot of `__typename` entries. Looking back at the `ListTodosQuery` you note how that is indeed part of the type, but it's not some data that we desire when working in React, in fact it's going to cause you problems further down the line. We can clean it up though.
+This is great but if you take a closer look at the intellisense in VSCode you'll see some `__typename` entries. Looking back at the `ListTodosQuery` you note how that is indeed part of the type, but it's not data that we desire when working in React, in fact it's going to cause you problems further down the line. We can clean it up though.
 
 ## TypeScript Omit & Exclude
 
-Fortunately we can automate this clean up in a nice way that won't break as we amend our `graphql.schema` file by using TypeScripts Omit & Exclude.
+Fortunately we can automate this clean up in a nice way that won't break as we amend our `graphql.schema` file by using TypeScripts Utility types [Omit](https://www.typescriptlang.org/docs/handbook/utility-types.html#omittype-keys) & [Exclude](https://www.typescriptlang.org/docs/handbook/utility-types.html#excludetype-excludedunion).
 
 Create a new file `graphql/APITypes.ts` and add the export to your `graphql/index.ts` file.
 
@@ -399,7 +389,7 @@ and update the JSX telling TypeScript that each todo item is of the TodoType:
   </div>
 ```
 
-Intellisense works and without the erroeneous `null` and `__typename` properties.
+Intellisense now works without the erroeneous `null` and `__typename` properties.
 
 ## Changing Schema
 
@@ -430,12 +420,12 @@ Let's try this out, back in our React code lets add the status of the completed 
    </div> 
 ```
 
-When adding the status and typing the period you should have noticed how TypeScript suggested completed as an option. It was that easy to be type safe.
+When adding the status and typing the period you should have noticed how TypeScript suggested completed as an option!
 
-If you look in the browser though you'll see status is null. Well this isn't anything to do with TypeScript, it's that we literally haven't set any value yet for the completed status and null is an appropriate alternative value. Let's fix that in GraphiQL
+If you look in the browser though you'll see status is null because we haven't set any value yet for the completed status and null is an appropriate alternative value. Let's fix that in GraphiQL
 
 ```ts
-mutation MyMutation2 {
+mutation MyMutation {
   updateTodo(input: {id: "8bce419d-39d5-425b-ab45-00f731e0454e", completed: true}) {
     id
   }
@@ -446,7 +436,7 @@ Sorted!
 
 ## Summary
 
-That's it, our app now has a nice contract between the backend and the frontend using the `GraphQL.schema` file as the glue.
+Our app now has a nice contract between the backend and the frontend using the `GraphQL.schema` file as the glue and delivers on the promise of preventing runtime errors for both backend and frontend.
 
 ----
 
